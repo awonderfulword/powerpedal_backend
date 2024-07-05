@@ -62,6 +62,7 @@ public class AuthController {
     }
 
     @PostMapping("register")
+    @Transactional
     public ResponseEntity<String> register(@RequestBody RegisterDto registerDto) {
         if (userRepository.existsByUsername(registerDto.getUsername())) {
             return new ResponseEntity<>("Username is taken!", HttpStatus.BAD_REQUEST);
@@ -70,6 +71,8 @@ public class AuthController {
         UserEntity user = new UserEntity();
         user.setUsername(registerDto.getUsername());
         user.setPassword(passwordEncoder.encode((registerDto.getPassword())));
+        user.setFirstname(registerDto.getFirstname());
+        user.setLastname(registerDto.getLastname());
 
         List<Role> userRoles = new ArrayList<>();
         for (String roleName : registerDto.getRoles()) {
