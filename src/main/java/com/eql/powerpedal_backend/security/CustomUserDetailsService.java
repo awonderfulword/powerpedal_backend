@@ -1,7 +1,7 @@
 package com.eql.powerpedal_backend.security;
 
 import com.eql.powerpedal_backend.entity.Role;
-import com.eql.powerpedal_backend.entity.Users;
+import com.eql.powerpedal_backend.entity.UserEntity;
 import com.eql.powerpedal_backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -27,10 +27,10 @@ public class CustomUserDetailsService  implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Users user = userRepository.findByEmail(email).orElseThrow(() ->
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        UserEntity user = userRepository.findByUsername(username).orElseThrow(() ->
                 new UsernameNotFoundException("Username not found"));
-        return new User(user.getEmail(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
+        return new User(user.getUsername(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
     }
 
     private Collection<GrantedAuthority> mapRolesToAuthorities(List<Role> roles) {

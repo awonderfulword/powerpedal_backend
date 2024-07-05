@@ -1,16 +1,19 @@
 package com.eql.powerpedal_backend.entity;
 
-
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+
+@Setter
+@Getter
 @Entity
 @Table(name = "roles")
-@Data
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     private String name;
+
 }

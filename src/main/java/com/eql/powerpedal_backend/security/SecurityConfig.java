@@ -37,8 +37,8 @@ public class SecurityConfig {
                     auth.requestMatchers("/api/user/**").hasAnyRole("ADMIN", "USER");
                     auth.anyRequest().authenticated();
                 })
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(authEntryPoint))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(authEntryPoint)) //异常处理
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))  //将会话管理设置为无状态
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

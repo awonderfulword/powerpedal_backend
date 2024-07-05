@@ -8,13 +8,12 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @Data
-public class Users{
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    private String email;
-    private String name;
+    private String username;
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)

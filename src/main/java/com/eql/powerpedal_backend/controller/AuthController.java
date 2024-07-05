@@ -1,14 +1,15 @@
 package com.eql.powerpedal_backend.controller;
 
-import com.eql.powerpedal_backend.security.JWTGenerator;
 import com.eql.powerpedal_backend.dto.AuthResponseDTO;
 import com.eql.powerpedal_backend.dto.LoginDto;
 import com.eql.powerpedal_backend.dto.RegisterDto;
 import com.eql.powerpedal_backend.entity.Role;
-import com.eql.powerpedal_backend.entity.Users;
+import com.eql.powerpedal_backend.entity.UserEntity;
 import com.eql.powerpedal_backend.repository.RoleRepository;
 import com.eql.powerpedal_backend.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import com.eql.powerpedal_backend.security.JWTGenerator;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,18 +18,22 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
+@Transactional
 public class AuthController {
 
+    @PersistenceContext
+    private EntityManager entityManager;
     private AuthenticationManager authenticationManager;
     private UserRepository userRepository;
     private RoleRepository roleRepository;
@@ -45,39 +50,38 @@ public class AuthController {
         this.jwtGenerator = jwtGenerator;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterDto registerDto) {
-
-        if (userRepository.existsByEmail(registerDto.getEmail())) {
-            return new ResponseEntity<>("Username is taken!", HttpStatus.BAD_REQUEST);
-        }
-
-        Users user = new Users();
-        user.setEmail(registerDto.getEmail());
-        user.setPassword(passwordEncoder.encode((registerDto.getPassword())));
-
-        //使用orElseThhrow处理找不到角色的情况
-        Role role = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RuntimeException("Error: Role USER is not found."));
-        //确保roles是持久化状态的，不需要重新保存; 设置用户的角色
-       // user.setRoles(Collections.singletonList(role));
-        user.getRoles().add(role);
-        //保存用户
-        userRepository.save(user);
-
-        return new ResponseEntity<>("User registered success!", HttpStatus.OK);
-    }
-
-    @PostMapping("/login")
+    @PostMapping("login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginDto loginDto){
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        loginDto.getEmail(),
+                        loginDto.getUsername(),
                         loginDto.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String token = jwtGenerator.generateToken(authentication);
         return new ResponseEntity<>(new AuthResponseDTO(token), HttpStatus.OK);
     }
 
+    @PostMapping("register")
+    public ResponseEntity<String> register(@RequestBody RegisterDto registerDto) {
+        if (userRepository.existsByUsername(registerDto.getUsername())) {
+            return new ResponseEntity<>("Username is taken!", HttpStatus.BAD_REQUEST);
+        }
 
+        UserEntity user = new UserEntity();
+        user.setUsername(registerDto.getUsername());
+        user.setPassword(passwordEncoder.encode((registerDto.getPassword())));
+
+        List<Role> userRoles = new ArrayList<>();
+        for (String roleName : registerDto.getRoles()) {
+            Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Role '" + roleName + "' not found!"));
+            role = entityManager.merge(role);
+            userRoles.add(role);
+        }
+        user.setRoles(userRoles);
+
+        userRepository.save(user);
+
+        return new ResponseEntity<>("User registered success!", HttpStatus.OK);
+    }
 }
